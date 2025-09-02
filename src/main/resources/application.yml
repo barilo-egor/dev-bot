@@ -1,0 +1,5 @@
+spring:
+  application:
+    name: 'dev-bot'
+  config:
+    import: optional:file:config/config.yml
