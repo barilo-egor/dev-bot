@@ -1,3 +1,10 @@
 bot:
   username:
   token:
+  adminsChatIds:
+spring:
+  data:
+    redis:
+      host:
+      port:
+      password:
