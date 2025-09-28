@@ -5,5 +5,6 @@ public enum CallbackQueryId {
     NEW_USER,
     DELETE_USER,
     UPDATE_PASSWORD,
-    BACK_TO_MAIN_MENU
+    BACK_TO_MAIN_MENU,
+    BACK_TO_AUTH_MENU
 }

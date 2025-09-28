@@ -9,7 +9,7 @@ import java.util.List;
 @Configuration
 @ConfigurationProperties(prefix = "bot")
 @Data
-public class DevBotConfig {
+public class DevBotConfigurationProperties {
 
     private String username;
 

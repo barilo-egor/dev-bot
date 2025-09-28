@@ -2,46 +2,46 @@ package tgb.cryptoexchange.devbot.handler;
 
 import org.springframework.stereotype.Service;
 import tgb.cryptoexchange.devbot.constants.CallbackQueryId;
+import tgb.cryptoexchange.devbot.constants.DevBotUserState;
 import tgb.cryptoexchange.tgcommon.handler.CallbackQueryHandler;
 import tgb.cryptoexchange.tgcommon.keyboard.InlineButton;
 import tgb.cryptoexchange.tgcommon.keyboard.KeyboardBuilder;
 import tgb.cryptoexchange.tgcommon.keyboard.PressedInlineButton;
+import tgb.cryptoexchange.tgcommon.service.RedisUserStateService;
 import tgb.cryptoexchange.tgcommon.service.sender.ResponseSender;
 
 import java.util.List;
 
 @Service
-public class AuthHandler implements CallbackQueryHandler {
+public class NewUserCallbackHandler implements CallbackQueryHandler {
 
     private final ResponseSender responseSender;
 
+    private final RedisUserStateService redisUserStateService;
+
     private final KeyboardBuilder keyboardBuilder;
 
-    public AuthHandler(ResponseSender responseSender, KeyboardBuilder keyboardBuilder) {
+    public NewUserCallbackHandler(ResponseSender responseSender, RedisUserStateService redisUserStateService,
+                                  KeyboardBuilder keyboardBuilder) {
         this.responseSender = responseSender;
+        this.redisUserStateService = redisUserStateService;
         this.keyboardBuilder = keyboardBuilder;
     }
 
     @Override
     public void handle(PressedInlineButton button) {
-        sendMenu(button.getChatId(), button.getMessage().getMessageId());
-    }
-
-    public void sendMenu(Long chatId, Integer messageId) {
-        responseSender.to(chatId)
-                .editText(messageId, "Меню сервиса аутентификации.")
+        redisUserStateService.save(button.getChatId(), DevBotUserState.NEW_USER);
+        responseSender.to(button.getChatId())
+                .editText(button.getMessage().getMessageId(), "Введите идентификатор пользователя.")
                 .replyKeyboard(keyboardBuilder.buildInline(List.of(
-                        new InlineButton(CallbackQueryId.NEW_USER.name(), "Новый пользователь"),
-                        new InlineButton(CallbackQueryId.DELETE_USER.name(), "Удалить пользователя"),
-                        new InlineButton(CallbackQueryId.UPDATE_PASSWORD.name(), "Обновить пароль"),
-                        new InlineButton(CallbackQueryId.BACK_TO_MAIN_MENU.name(), "Назад")
-                )))
+                        new InlineButton(CallbackQueryId.BACK_TO_AUTH_MENU.name(), "Назад")))
+                )
                 .send();
     }
 
     @Override
     public String getId() {
-        return CallbackQueryId.AUTH.name();
+        return CallbackQueryId.NEW_USER.name();
     }
 
     @Override

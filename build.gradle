@@ -28,7 +28,10 @@ repositories {
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'tgb.cryptoexchange:tg-common:0.1'
+    implementation 'tgb.cryptoexchange:common-api:1.0.0'
     implementation 'org.telegram:telegrambots-spring-boot-starter:6.9.7.1'
+    implementation 'org.springframework:spring-webflux:6.2.11'
+
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'

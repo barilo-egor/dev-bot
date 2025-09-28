@@ -1,7 +1,7 @@
 package tgb.cryptoexchange.devbot.filter;
 
 import org.springframework.stereotype.Service;
-import tgb.cryptoexchange.devbot.config.DevBotConfig;
+import tgb.cryptoexchange.devbot.config.DevBotConfigurationProperties;
 import tgb.cryptoexchange.tgcommon.handler.BannedCache;
 
 import java.util.List;
@@ -11,8 +11,8 @@ public class BannedCacheImpl implements BannedCache {
 
     private final List<Long> adminsChatIds;
 
-    public BannedCacheImpl(DevBotConfig devBotConfig) {
-        this.adminsChatIds = devBotConfig.getAdminsChatIds();
+    public BannedCacheImpl(DevBotConfigurationProperties devBotConfigurationProperties) {
+        this.adminsChatIds = devBotConfigurationProperties.getAdminsChatIds();
     }
 
     @Override
