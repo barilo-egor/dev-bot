@@ -8,3 +8,7 @@ spring:
       host:
       port:
       password:
+tgb:
+  service:
+    auth:
+      url: "http://localhost:8080/auth"
