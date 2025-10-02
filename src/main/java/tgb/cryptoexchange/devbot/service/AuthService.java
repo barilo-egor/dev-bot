@@ -1,11 +1,9 @@
 package tgb.cryptoexchange.devbot.service;
 
-import lombok.Data;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import tgb.cryptoexchange.devbot.exception.AuthException;
 import tgb.cryptoexchange.devbot.exception.NoResponseException;
@@ -26,7 +24,8 @@ public class AuthService {
 
     public boolean isUsernameFree(String username) throws AuthException {
         ApiResponse<List<String>> response = webClient.get().retrieve()
-                .bodyToMono(new ParameterizedTypeReference<ApiResponse<List<String>>>() {})
+                .bodyToMono(new ParameterizedTypeReference<ApiResponse<List<String>>>() {
+                })
                 .block();
         if (Objects.isNull(response)) {
             throw new NoResponseException("No response.");
@@ -44,7 +43,8 @@ public class AuthService {
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(new RegisterRequest(username, password))
                 .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<ApiResponse<String>>() {})
+                .bodyToMono(new ParameterizedTypeReference<ApiResponse<String>>() {
+                })
                 .block();
         if (Objects.isNull(response)) {
             throw new NoResponseException("No response.");
@@ -55,6 +55,6 @@ public class AuthService {
         }
     }
 
-    public record RegisterRequest (String username, String password) {
+    public record RegisterRequest(String username, String password) {
     }
 }

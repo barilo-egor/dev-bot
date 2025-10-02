@@ -1,6 +1,7 @@
 package tgb.cryptoexchange.devbot.handler;
 
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import tgb.cryptoexchange.devbot.constants.CallbackQueryId;
 import tgb.cryptoexchange.devbot.constants.DevBotUserState;
@@ -8,10 +9,10 @@ import tgb.cryptoexchange.devbot.exception.AuthException;
 import tgb.cryptoexchange.devbot.service.AuthService;
 import tgb.cryptoexchange.devbot.service.PasswordGenerator;
 import tgb.cryptoexchange.tgcommon.constants.UpdateType;
-import tgb.cryptoexchange.tgcommon.constants.UserState;
 import tgb.cryptoexchange.tgcommon.handler.StateHandler;
 import tgb.cryptoexchange.tgcommon.service.RedisUserStateService;
 import tgb.cryptoexchange.tgcommon.service.sender.ResponseSender;
+import tgb.cryptoexchange.web.ApiResponse;
 
 @Service
 public class NewUserStateHandler implements StateHandler {
@@ -60,12 +61,23 @@ public class NewUserStateHandler implements StateHandler {
                         .send();
                 return;
             }
-            password = passwordGenerator.generate();
+            password = passwordGenerator.generate(32);
             authService.register(enteredUsername, password);
         } catch (AuthException e) {
             responseSender.to(chatId)
                     .message("Ошибка при выполнении запроса.\n" + e.getMessage())
                     .send() ;
+            return;
+        } catch (WebClientResponseException e) {
+            if (e instanceof WebClientResponseException.BadRequest badRequest) {
+                responseSender.to(chatId)
+                        .message(badRequest.getResponseBodyAs(ApiResponse.class).getError().getMessage())
+                        .send();
+            } else {
+                responseSender.to(chatId)
+                        .message("Ошибка при выполнении запроса: " + e.getMessage())
+                        .send();
+            }
             return;
         }
         responseSender.to(chatId)
@@ -74,7 +86,7 @@ public class NewUserStateHandler implements StateHandler {
     }
 
     @Override
-    public UserState getUserState() {
-        return DevBotUserState.NEW_USER;
+    public String getUserState() {
+        return DevBotUserState.NEW_USER.getState();
     }
 }

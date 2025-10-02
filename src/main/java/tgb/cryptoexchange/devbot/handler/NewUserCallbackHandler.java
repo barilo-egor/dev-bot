@@ -30,7 +30,7 @@ public class NewUserCallbackHandler implements CallbackQueryHandler {
 
     @Override
     public void handle(PressedInlineButton button) {
-        redisUserStateService.save(button.getChatId(), DevBotUserState.NEW_USER);
+        redisUserStateService.save(button.getChatId(), DevBotUserState.NEW_USER.getState());
         responseSender.to(button.getChatId())
                 .editText(button.getMessage().getMessageId(), "Введите идентификатор пользователя.")
                 .replyKeyboard(keyboardBuilder.buildInline(List.of(
