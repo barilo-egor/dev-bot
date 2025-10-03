@@ -8,6 +8,7 @@ class DevBotApplicationTests {
 
     @Test
     void contextLoads() {
+        // тест контекста
     }
 
 }
