@@ -14,6 +14,8 @@ import tgb.cryptoexchange.tgcommon.service.RedisUserStateService;
 import tgb.cryptoexchange.tgcommon.service.sender.ResponseSender;
 import tgb.cryptoexchange.web.ApiResponse;
 
+import java.util.Optional;
+
 @Service
 public class NewUserStateHandler implements StateHandler {
 
@@ -38,51 +40,63 @@ public class NewUserStateHandler implements StateHandler {
 
     @Override
     public void handle(Update update) {
-        if (update.hasCallbackQuery() && update.getCallbackQuery().getData().equals(CallbackQueryId.BACK_TO_AUTH_MENU.name())) {
-            Long chatId = update.getCallbackQuery().getMessage().getChatId();
-            authHandler.sendMenu(chatId, update.getCallbackQuery().getMessage().getMessageId());
-            redisUserStateService.delete(chatId);
-            return;
-        }
-        if (!update.hasMessage() || !update.getMessage().hasText()) {
-            responseSender.to(UpdateType.getChatId(update))
-                    .message("Отправьте идентификатор пользователя, либо нажмите \"Назад\".")
-                    .send();
+        if (!isValid(update)) {
             return;
         }
         Long chatId = update.getMessage().getChatId();
         String enteredUsername = update.getMessage().getText();
         String password;
         try {
-            boolean isUsernameFree = authService.isUsernameFree(enteredUsername);
-            if (!isUsernameFree) {
+            Optional<String> maybePassword = register(enteredUsername);
+            if (maybePassword.isPresent()) {
+                password = maybePassword.get();
+            } else {
                 responseSender.to(chatId)
                         .message("Идентификатор уже используется.")
                         .send();
                 return;
             }
-            password = passwordGenerator.generate(32);
-            authService.register(enteredUsername, password);
-        } catch (AuthException e) {
+        } catch (WebClientResponseException.BadRequest e) {
             responseSender.to(chatId)
-                    .message("Ошибка при выполнении запроса.\n" + e.getMessage())
-                    .send() ;
-            return;
-        } catch (WebClientResponseException e) {
-            if (e instanceof WebClientResponseException.BadRequest badRequest) {
-                responseSender.to(chatId)
-                        .message(badRequest.getResponseBodyAs(ApiResponse.class).getError().getMessage())
-                        .send();
-            } else {
-                responseSender.to(chatId)
-                        .message("Ошибка при выполнении запроса: " + e.getMessage())
-                        .send();
-            }
+                    .message(
+                            Optional.ofNullable(e.getResponseBodyAs(ApiResponse.class))
+                                    .orElseThrow(() -> new AuthException("Отсутствует тело ответа."))
+                                    .getError()
+                                    .getMessage()
+                    )
+                    .send();
             return;
         }
         responseSender.to(chatId)
                 .message("Пользователь успешно зарегистрирован.\nПароль: <code>" + password + "</code>")
                 .send();
+        authHandler.handle(chatId);
+    }
+
+    private Optional<String> register(String enteredUsername) {
+        boolean isUsernameFree = authService.isUsernameFree(enteredUsername);
+        if (!isUsernameFree) {
+            return Optional.empty();
+        }
+        String password = passwordGenerator.generate(32);
+        authService.register(enteredUsername, password);
+        return Optional.of(password);
+    }
+
+    private boolean isValid(Update update) {
+        if (update.hasCallbackQuery() && update.getCallbackQuery().getData().equals(CallbackQueryId.BACK_TO_AUTH_MENU.name())) {
+            Long chatId = update.getCallbackQuery().getMessage().getChatId();
+            authHandler.handle(chatId, update.getCallbackQuery().getMessage().getMessageId());
+            redisUserStateService.delete(chatId);
+            return false;
+        }
+        if (!update.hasMessage() || !update.getMessage().hasText()) {
+            responseSender.to(UpdateType.getChatId(update))
+                    .message("Отправьте идентификатор пользователя, либо нажмите \"Назад\".")
+                    .send();
+            return false;
+        }
+        return true;
     }
 
     @Override

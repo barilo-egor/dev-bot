@@ -8,6 +8,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import tgb.cryptoexchange.devbot.exception.AuthException;
 import tgb.cryptoexchange.devbot.exception.NoResponseException;
 import tgb.cryptoexchange.web.ApiResponse;
+import tgb.cryptoexchange.web.AuthLoginService;
 
 import java.util.List;
 import java.util.Objects;
@@ -18,12 +19,19 @@ public class AuthService {
 
     private final WebClient webClient;
 
-    public AuthService(@Value("${tgb.service.auth.url}") String authUrl) {
+    private final AuthLoginService authLoginService;
+
+    public AuthService(@Value("${tgb.service.auth.url}") String authUrl,
+                       AuthLoginService authLoginService) {
         this.webClient = WebClient.builder().baseUrl(authUrl).build();
+        this.authLoginService = authLoginService;
     }
 
     public boolean isUsernameFree(String username) throws AuthException {
-        ApiResponse<List<String>> response = webClient.get().retrieve()
+        ApiResponse<List<String>> response = webClient.get()
+                .header("Authorization", "Bearer " + authLoginService.login())
+                .header("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<ApiResponse<List<String>>>() {
                 })
                 .block();
@@ -40,6 +48,7 @@ public class AuthService {
     public void register(String username, String password) throws AuthException {
         ApiResponse<String> response = webClient.post()
                 .uri("/register")
+                .header("Authorization", "Bearer " + authLoginService.login())
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(new RegisterRequest(username, password))
                 .retrieve()

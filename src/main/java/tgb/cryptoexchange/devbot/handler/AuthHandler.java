@@ -1,6 +1,7 @@
 package tgb.cryptoexchange.devbot.handler;
 
 import org.springframework.stereotype.Service;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import tgb.cryptoexchange.devbot.constants.CallbackQueryId;
 import tgb.cryptoexchange.tgcommon.handler.CallbackQueryHandler;
 import tgb.cryptoexchange.tgcommon.keyboard.InlineButton;
@@ -15,27 +16,34 @@ public class AuthHandler implements CallbackQueryHandler {
 
     private final ResponseSender responseSender;
 
-    private final KeyboardBuilder keyboardBuilder;
+    private final InlineKeyboardMarkup keyboard;
 
     public AuthHandler(ResponseSender responseSender, KeyboardBuilder keyboardBuilder) {
         this.responseSender = responseSender;
-        this.keyboardBuilder = keyboardBuilder;
+        this.keyboard = keyboardBuilder.buildInline(List.of(
+                new InlineButton(CallbackQueryId.NEW_USER.name(), "Новый пользователь"),
+                new InlineButton(CallbackQueryId.DELETE_USER.name(), "Удалить пользователя"),
+                new InlineButton(CallbackQueryId.UPDATE_PASSWORD.name(), "Обновить пароль"),
+                new InlineButton(CallbackQueryId.BACK_TO_MAIN_MENU.name(), "Назад")
+        ));
     }
 
     @Override
     public void handle(PressedInlineButton button) {
-        sendMenu(button.getChatId(), button.getMessage().getMessageId());
+        handle(button.getChatId(), button.getMessage().getMessageId());
     }
 
-    public void sendMenu(Long chatId, Integer messageId) {
+    public void handle(Long chatId) {
+        responseSender.to(chatId)
+                .message("Меню сервиса аутентификации.")
+                .replyKeyboard(keyboard)
+                .send();
+    }
+
+    public void handle(Long chatId, Integer messageId) {
         responseSender.to(chatId)
                 .editText(messageId, "Меню сервиса аутентификации.")
-                .replyKeyboard(keyboardBuilder.buildInline(List.of(
-                        new InlineButton(CallbackQueryId.NEW_USER.name(), "Новый пользователь"),
-                        new InlineButton(CallbackQueryId.DELETE_USER.name(), "Удалить пользователя"),
-                        new InlineButton(CallbackQueryId.UPDATE_PASSWORD.name(), "Обновить пароль"),
-                        new InlineButton(CallbackQueryId.BACK_TO_MAIN_MENU.name(), "Назад")
-                )))
+                .replyKeyboard(keyboard)
                 .send();
     }
 
