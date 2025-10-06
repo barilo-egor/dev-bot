@@ -1,4 +1,4 @@
-package tgb.cryptoexchange.devbot.handler;
+package tgb.cryptoexchange.devbot.handler.auth;
 
 import org.springframework.stereotype.Service;
 import tgb.cryptoexchange.devbot.constants.CallbackQueryId;
