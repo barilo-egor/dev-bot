@@ -44,6 +44,9 @@ public class NewUserStateHandler implements StateHandler {
             return;
         }
         Long chatId = update.getMessage().getChatId();
+        responseSender.to(chatId)
+                .action()
+                .typing();
         String enteredUsername = update.getMessage().getText();
         String password;
         try {
@@ -70,6 +73,7 @@ public class NewUserStateHandler implements StateHandler {
         responseSender.to(chatId)
                 .message("Пользователь успешно зарегистрирован.\nПароль: <code>" + password + "</code>")
                 .send();
+        redisUserStateService.delete(chatId);
         authHandler.handle(chatId);
     }
 

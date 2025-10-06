@@ -28,6 +28,10 @@ public class AuthService {
     }
 
     public boolean isUsernameFree(String username) throws AuthException {
+        return !getUsernames().contains(username);
+    }
+
+    public List<String> getUsernames() {
         ApiResponse<List<String>> response = webClient.get()
                 .header("Authorization", "Bearer " + authLoginService.login())
                 .header("Content-Type", MediaType.APPLICATION_JSON_VALUE)
@@ -39,7 +43,7 @@ public class AuthService {
             throw new NoResponseException("No response.");
         }
         if (response.isSuccess()) {
-            return !response.getData().contains(username);
+            return response.getData();
         }
         ApiResponse.Error error = response.getError();
         throw new AuthException("Код ошибки: " + error.getCode() + ". Сообщение: " + error.getMessage());
@@ -65,5 +69,14 @@ public class AuthService {
     }
 
     public record RegisterRequest(String username, String password) {
+    }
+
+    public void delete(String username) {
+        webClient.delete()
+                .uri(uriBuilder -> uriBuilder.queryParam("username", username).build())
+                .header("Authorization", "Bearer " + authLoginService.login())
+                .retrieve()
+                .toBodilessEntity()
+                .block();
     }
 }
