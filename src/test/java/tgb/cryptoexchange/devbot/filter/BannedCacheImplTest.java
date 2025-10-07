@@ -32,4 +32,15 @@ class BannedCacheImplTest {
                 () -> assertTrue(bannedCache.get(123321L))
         );
     }
+
+    @Test
+    void shouldCreateWithEmptyAdminChatIds() {
+        when(properties.getAdminsChatIds()).thenReturn(null);
+        BannedCacheImpl bannedCache = new BannedCacheImpl(properties);
+        assertAll(
+                () -> assertTrue(bannedCache.get(123456789L)),
+                () -> assertTrue(bannedCache.get(987654321L)),
+                () -> assertTrue(bannedCache.get(123321L))
+        );
+    }
 }
