@@ -7,22 +7,22 @@ import tgb.cryptoexchange.tgcommon.handler.CallbackQueryHandler;
 import tgb.cryptoexchange.tgcommon.keyboard.PressedInlineButton;
 
 @Service
-public class BackToDeleteUserHandler implements CallbackQueryHandler {
+public class UpdatePasswordHandler implements CallbackQueryHandler {
 
     private final AuthMenuService authMenuService;
 
-    public BackToDeleteUserHandler(AuthMenuService authMenuService) {
+    public UpdatePasswordHandler(AuthMenuService authMenuService) {
         this.authMenuService = authMenuService;
     }
 
     @Override
     public void handle(PressedInlineButton button) {
-        authMenuService.sendUsers(button.getChatId(), button.getMessage().getMessageId(), CallbackQueryId.DELETE_USER_CONFIRM);
+        authMenuService.sendUsers(button.getChatId(), button.getMessage().getMessageId(), CallbackQueryId.UPDATE_PASSWORD_CONFIRM);
     }
 
     @Override
     public String getId() {
-        return CallbackQueryId.BACK_TO_DELETE_USER_MENU.name();
+        return CallbackQueryId.UPDATE_PASSWORD.name();
     }
 
     @Override

@@ -79,4 +79,13 @@ public class AuthService {
                 .toBodilessEntity()
                 .block();
     }
+
+    public void patch(String username, String password) {
+        webClient.patch()
+                .uri(uriBuilder -> uriBuilder.path("/" + username).queryParam("password", password).build())
+                .header("Authorization", "Bearer " + authLoginService.login())
+                .retrieve()
+                .toBodilessEntity()
+                .block();
+    }
 }

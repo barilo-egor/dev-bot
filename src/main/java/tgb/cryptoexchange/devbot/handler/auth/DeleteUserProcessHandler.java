@@ -2,6 +2,7 @@ package tgb.cryptoexchange.devbot.handler.auth;
 
 import org.springframework.stereotype.Service;
 import tgb.cryptoexchange.devbot.constants.CallbackQueryId;
+import tgb.cryptoexchange.devbot.service.AuthMenuService;
 import tgb.cryptoexchange.devbot.service.AuthService;
 import tgb.cryptoexchange.tgcommon.exception.TelegramCommonException;
 import tgb.cryptoexchange.tgcommon.handler.CallbackQueryHandler;
@@ -13,15 +14,14 @@ public class DeleteUserProcessHandler implements CallbackQueryHandler {
 
     private final AuthService authService;
 
-    private final DeleteUserCallbackHandler deleteUserCallbackHandler;
-
     private final ResponseSender responseSender;
 
-    public DeleteUserProcessHandler(AuthService authService, DeleteUserCallbackHandler deleteUserCallbackHandler,
-                                    ResponseSender responseSender) {
+    private final AuthMenuService authMenuService;
+
+    public DeleteUserProcessHandler(AuthService authService, ResponseSender responseSender, AuthMenuService authMenuService) {
         this.authService = authService;
-        this.deleteUserCallbackHandler = deleteUserCallbackHandler;
         this.responseSender = responseSender;
+        this.authMenuService = authMenuService;
     }
 
     @Override
@@ -34,7 +34,7 @@ public class DeleteUserProcessHandler implements CallbackQueryHandler {
         responseSender.to(button.getChatId())
                 .message("Пользователь <b>" + username + "</b> был удален.")
                 .send();
-        deleteUserCallbackHandler.sendUsers(button.getChatId(), null);
+        authMenuService.sendUsers(button.getChatId(), button.getMessage().getMessageId(), CallbackQueryId.DELETE_USER_CONFIRM);
     }
 
     @Override
