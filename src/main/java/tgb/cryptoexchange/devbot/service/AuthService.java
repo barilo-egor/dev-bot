@@ -73,7 +73,7 @@ public class AuthService {
 
     public void delete(String username) {
         webClient.delete()
-                .uri(uriBuilder -> uriBuilder.queryParam("username", username).build())
+                .uri(uriBuilder -> uriBuilder.path("/" + username).build())
                 .header("Authorization", "Bearer " + authLoginService.login())
                 .retrieve()
                 .toBodilessEntity()
