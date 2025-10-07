@@ -15,7 +15,7 @@ public class BannedCacheImpl implements BannedCache {
 
     public BannedCacheImpl(DevBotConfigurationProperties devBotConfigurationProperties) {
         if (Objects.nonNull(devBotConfigurationProperties.getAdminsChatIds())) {
-            this.adminsChatIds = devBotConfigurationProperties.getAdminsChatIds();
+            this.adminsChatIds = new ArrayList<>(devBotConfigurationProperties.getAdminsChatIds());
         } else {
             this.adminsChatIds = new ArrayList<>();
         }
