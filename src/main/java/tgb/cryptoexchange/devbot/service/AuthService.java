@@ -1,5 +1,6 @@
 package tgb.cryptoexchange.devbot.service;
 
+import org.apache.http.HttpHeaders;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
@@ -17,6 +18,8 @@ import java.util.Objects;
 @Service
 public class AuthService {
 
+    private static final String BEARER = "Bearer ";
+
     private final WebClient webClient;
 
     private final AuthLoginService authLoginService;
@@ -27,14 +30,14 @@ public class AuthService {
         this.authLoginService = authLoginService;
     }
 
-    public boolean isUsernameFree(String username) throws AuthException {
+    public boolean isUsernameFree(String username) {
         return !getUsernames().contains(username);
     }
 
     public List<String> getUsernames() {
         ApiResponse<List<String>> response = webClient.get()
-                .header("Authorization", "Bearer " + authLoginService.login())
-                .header("Content-Type", MediaType.APPLICATION_JSON_VALUE)
+                .header(HttpHeaders.AUTHORIZATION, BEARER + authLoginService.login())
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<ApiResponse<List<String>>>() {
                 })
@@ -52,7 +55,7 @@ public class AuthService {
     public void register(String username, String password) throws AuthException {
         ApiResponse<String> response = webClient.post()
                 .uri("/register")
-                .header("Authorization", "Bearer " + authLoginService.login())
+                .header(HttpHeaders.AUTHORIZATION, BEARER + authLoginService.login())
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(new RegisterRequest(username, password))
                 .retrieve()
@@ -74,7 +77,7 @@ public class AuthService {
     public void delete(String username) {
         webClient.delete()
                 .uri(uriBuilder -> uriBuilder.path("/" + username).build())
-                .header("Authorization", "Bearer " + authLoginService.login())
+                .header(HttpHeaders.AUTHORIZATION, BEARER + authLoginService.login())
                 .retrieve()
                 .toBodilessEntity()
                 .block();
@@ -83,7 +86,7 @@ public class AuthService {
     public void patch(String username, String password) {
         webClient.patch()
                 .uri(uriBuilder -> uriBuilder.path("/" + username).queryParam("password", password).build())
-                .header("Authorization", "Bearer " + authLoginService.login())
+                .header(HttpHeaders.AUTHORIZATION, BEARER + authLoginService.login())
                 .retrieve()
                 .toBodilessEntity()
                 .block();
