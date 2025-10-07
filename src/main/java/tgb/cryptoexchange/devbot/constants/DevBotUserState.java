@@ -2,10 +2,11 @@ package tgb.cryptoexchange.devbot.constants;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import tgb.cryptoexchange.tgcommon.constants.UserState;
 
 @Getter
 @AllArgsConstructor
-public enum DevBotUserState implements tgb.cryptoexchange.tgcommon.constants.UserState {
+public enum DevBotUserState implements UserState {
     NEW_USER,
     DELETE_USER;
 
