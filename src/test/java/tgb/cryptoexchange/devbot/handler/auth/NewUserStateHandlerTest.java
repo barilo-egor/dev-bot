@@ -1,6 +1,5 @@
 package tgb.cryptoexchange.devbot.handler.auth;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -48,8 +47,6 @@ class NewUserStateHandlerTest {
 
     @InjectMocks
     private NewUserStateHandler newUserStateHandler;
-
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @ParameterizedTest
     @CsvSource({
