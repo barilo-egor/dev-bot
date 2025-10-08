@@ -71,7 +71,7 @@ public class NewUserStateHandler implements StateHandler {
             return;
         }
         responseSender.to(chatId)
-                .message("Пользователь успешно зарегистрирован.\nПароль: <code>" + password + "</code>")
+                .message("Пользователь <b>" + enteredUsername + "</b> успешно зарегистрирован.\nПароль: <code>" + password + "</code>")
                 .send();
         redisUserStateService.delete(chatId);
         authHandler.handle(chatId);
