@@ -50,6 +50,7 @@ public class UpdatePasswordProcessHandler implements CallbackQueryHandler {
                                     .getMessage()
                     )
                     .send();
+            return;
         }
         responseSender.to(button.getChatId())
                 .delete(button.getMessage().getMessageId());
