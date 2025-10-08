@@ -10,6 +10,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import tgb.cryptoexchange.devbot.constants.CallbackQueryId;
+import tgb.cryptoexchange.tgcommon.exception.TelegramCommonException;
 import tgb.cryptoexchange.tgcommon.keyboard.InlineButton;
 import tgb.cryptoexchange.tgcommon.keyboard.KeyboardBuilder;
 import tgb.cryptoexchange.tgcommon.keyboard.PressedInlineButton;
@@ -42,7 +43,8 @@ class DeleteUserConfirmHandlerTest {
 
     @ParameterizedTest
     @CsvSource({
-            "Qwe123,123456789,55423"
+            "Qwe123,123456789,55423",
+            "Super-username,987654321,123"
     })
     void handleShouldAskConfirmForUsername(String username, Long chatId, Integer messageId) {
         PressedInlineButton pressedInlineButton = Mockito.mock(PressedInlineButton.class);
@@ -70,6 +72,13 @@ class DeleteUserConfirmHandlerTest {
                 () -> assertEquals("Нет", buttons.get(1).getText()),
                 () -> assertEquals(CallbackQueryId.BACK_TO_DELETE_USER_MENU.name(), buttons.get(1).getData())
         );
+    }
+
+    @Test
+    void handleShouldThrowTelegramCommonException() {
+        PressedInlineButton pressedInlineButton = Mockito.mock(PressedInlineButton.class);
+        when(pressedInlineButton.getArgument(1)).thenReturn(Optional.empty());
+        assertThrows(TelegramCommonException.class, () -> deleteUserConfirmHandler.handle(pressedInlineButton));
     }
 
     @Test
