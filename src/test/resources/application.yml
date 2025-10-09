@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: 'dev-bot'
+#  data:
+#    redis:
+#      host: ""
+#      port: ""
+#      password: ""
+#server:
+#  port:
+telegrambots:
+  enabled: "false"
+bot:
+  username: "usernamebot"
+  token: "123156245:qweasdQWEASD"
+  adminsChatIds:
+tgb:
+  service:
+    auth:
+      url: "http://localhost:8081"
+      username: "username"
+      password: "password"
