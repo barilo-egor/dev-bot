@@ -1,0 +1,18 @@
+server:
+  port:
+bot:
+  username:
+  token:
+  adminsChatIds:
+spring:
+  data:
+    redis:
+      host:
+      port:
+      password:
+tgb:
+  service:
+    auth:
+      url:
+      username:
+      password:
