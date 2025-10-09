@@ -1,7 +1,6 @@
 package tgb.cryptoexchange.devbot.service;
 
 import org.apache.http.HttpHeaders;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -24,9 +23,9 @@ public class AuthService {
 
     private final AuthLoginService authLoginService;
 
-    public AuthService(@Value("${tgb.service.auth.url}") String authUrl,
+    public AuthService(WebClient authWebClient,
                        AuthLoginService authLoginService) {
-        this.webClient = WebClient.builder().baseUrl(authUrl).build();
+        this.webClient = authWebClient;
         this.authLoginService = authLoginService;
     }
 
