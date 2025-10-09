@@ -34,7 +34,7 @@ public class DeleteUserProcessHandler implements CallbackQueryHandler {
         responseSender.to(button.getChatId())
                 .message("Пользователь <b>" + username + "</b> был удален.")
                 .send();
-        authMenuService.sendUsers(button.getChatId(), button.getMessage().getMessageId(), CallbackQueryId.DELETE_USER_CONFIRM);
+        authMenuService.sendUsers(button.getChatId(), null, CallbackQueryId.DELETE_USER_CONFIRM);
     }
 
     @Override

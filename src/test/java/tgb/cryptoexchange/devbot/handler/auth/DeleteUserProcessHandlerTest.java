@@ -65,7 +65,7 @@ class DeleteUserProcessHandlerTest {
         verify(messageTypeResolver).delete(messageId);
         verify(textMessage).send();
         assertEquals("Пользователь <b>" + username + "</b> был удален.", textCaptor.getValue());
-        verify(authMenuService).sendUsers(chatId, messageId, CallbackQueryId.DELETE_USER_CONFIRM);
+        verify(authMenuService).sendUsers(chatId, null, CallbackQueryId.DELETE_USER_CONFIRM);
     }
 
 
