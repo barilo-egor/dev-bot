@@ -2,54 +2,140 @@ package tgb.cryptoexchange.devbot.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import okhttp3.mockwebserver.MockResponse;
+import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.RecordedRequest;
+import org.apache.http.HttpHeaders;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.reactive.function.client.ClientRequest;
-import org.springframework.web.reactive.function.client.ClientResponse;
-import org.springframework.web.reactive.function.client.ExchangeFunction;
+import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
 import tgb.cryptoexchange.devbot.exception.AuthException;
+import tgb.cryptoexchange.devbot.exception.NoResponseException;
 import tgb.cryptoexchange.web.ApiResponse;
 import tgb.cryptoexchange.web.AuthLoginService;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
 
-    private WebClient webClient;
+    MockWebServer mockWebServer;
 
-    @Mock
-    private ExchangeFunction exchangeFunction;
+    AuthService authService;
 
-    @Mock
-    private AuthLoginService authLoginService;
-
-    private AuthService authService;
+    AuthLoginService authLoginService;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @BeforeEach
-    void setUp() {
-        webClient = WebClient.builder()
-                .exchangeFunction(exchangeFunction)
-                .baseUrl("http://localhost")
+    void setUp() throws IOException {
+        mockWebServer = new MockWebServer();
+        mockWebServer.start();
+        WebClient webClient = WebClient.builder()
+                .baseUrl(mockWebServer.url("/").toString())
                 .build();
+        authLoginService = mock(AuthLoginService.class);
         authService = new AuthService(webClient, authLoginService);
+    }
+
+    @AfterEach
+    void shutdown() throws IOException {
+        mockWebServer.shutdown();
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "isFreeUsername,username1",
+            "DarkAngel,username1;username2;username3",
+            "sureFreeUsername,"
+    })
+    void isUsernameFreeShouldReturnTrue(String usernameToFind, String usernamesString) throws JsonProcessingException {
+        List<String> usernames;
+        if (Objects.nonNull(usernamesString) && !usernamesString.isEmpty()) {
+            usernames = Arrays.asList(usernamesString.split(";"));
+        } else {
+            usernames = new ArrayList<>();
+        }
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(HttpStatus.OK.value())
+                .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .setBody(objectMapper.writeValueAsString(ApiResponse.success(usernames)))
+        );
+        String token = "some-token";
+        when(authLoginService.login()).thenReturn(token);
+
+        assertTrue(authService.isUsernameFree(usernameToFind));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "username1,username1",
+            "username2,username1;username2;username3"
+    })
+    void isUsernameFreeShouldReturnFalse(String usernameToFind, String usernamesString) throws JsonProcessingException {
+        List<String> usernames;
+        if (Objects.nonNull(usernamesString) && !usernamesString.isEmpty()) {
+            usernames = Arrays.asList(usernamesString.split(";"));
+        } else {
+            usernames = new ArrayList<>();
+        }
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(HttpStatus.OK.value())
+                .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .setBody(objectMapper.writeValueAsString(ApiResponse.success(usernames)))
+        );
+        String token = "some-token";
+        when(authLoginService.login()).thenReturn(token);
+
+        assertFalse(authService.isUsernameFree(usernameToFind));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "username1",
+            "username1,username2,username3",
+            ""
+    })
+    void getUsernamesShouldReturnUsernames(String usernamesString) throws JsonProcessingException, InterruptedException {
+        List<String> usernames;
+        if (!usernamesString.isEmpty()) {
+            usernames = Arrays.asList(usernamesString.split(","));
+        } else {
+            usernames = new ArrayList<>();
+        }
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(HttpStatus.OK.value())
+                .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .setBody(objectMapper.writeValueAsString(ApiResponse.success(usernames)))
+        );
+        String token = "some-token";
+        when(authLoginService.login()).thenReturn(token);
+
+        List<String> actual = authService.getUsernames();
+
+        assertEquals(usernames, actual);
+        RecordedRequest request = mockWebServer.takeRequest();
+        assertAll(
+                () -> assertEquals("GET", request.getMethod()),
+                () -> assertEquals("Bearer " + token, request.getHeader(HttpHeaders.AUTHORIZATION)),
+                () -> assertEquals(MediaType.APPLICATION_JSON_VALUE, request.getHeader(HttpHeaders.CONTENT_TYPE))
+        );
     }
 
     @ParameterizedTest
@@ -58,49 +144,56 @@ class AuthServiceTest {
             "ENTITY_NOT_FOUND,Error"
     })
     void getUsernamesShouldThrowAuthException(ApiResponse.Error.ErrorCode code, String message) throws JsonProcessingException {
-        when(authLoginService.login()).thenReturn("fake-token");
-        ClientResponse response = ClientResponse
-                .create(HttpStatus.OK)
-                .header("Content-Type", "application/json")
-                .body(objectMapper.writeValueAsString(
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(HttpStatus.OK.value())
+                .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .setBody(objectMapper.writeValueAsString(
                         ApiResponse.error(ApiResponse.Error.builder().code(code).message(message).build())
                 ))
-                .build();
-        when(exchangeFunction.exchange(any(ClientRequest.class)))
-                .thenReturn(Mono.just(response));
+        );
+        String token = "some-token";
+        when(authLoginService.login()).thenReturn(token);
+
         assertThrows(AuthException.class, () -> authService.getUsernames(), "Код ошибки: " + code + ". Сообщение: " + message);
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {
-            "username1,username2,username3",
-            "username1"
-    })
-    void shouldReturnUsernames(String usernamesString) throws JsonProcessingException {
-        List<String> usernames = Arrays.asList(usernamesString.split(","));
-        when(authLoginService.login()).thenReturn("fake-token");
-        ClientResponse response = ClientResponse
-                .create(HttpStatus.OK)
-                .header("Content-Type", "application/json")
-                .body(objectMapper.writeValueAsString(ApiResponse.success(usernames)))
-                .build();
-        when(exchangeFunction.exchange(any(ClientRequest.class))).thenReturn(Mono.just(response));
-
-        assertEquals(usernames, authService.getUsernames());
+    @Test
+    void getUsernamesShouldThrowNoResponseException() {
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(HttpStatus.OK.value())
+                .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+        );
+        assertThrows(NoResponseException.class, () -> authService.getUsernames());
     }
 
-    @Test
-    void shouldReturnEmptyUsernames() throws JsonProcessingException {
-        List<String> usernames = new ArrayList<>();
-        when(authLoginService.login()).thenReturn("fake-token");
-        ClientResponse response = ClientResponse
-                .create(HttpStatus.OK)
-                .header("Content-Type", "application/json")
-                .body(objectMapper.writeValueAsString(ApiResponse.success(usernames)))
-                .build();
-        when(exchangeFunction.exchange(any(ClientRequest.class))).thenReturn(Mono.just(response));
 
-        assertTrue(authService.getUsernames().isEmpty());
+
+    @ParameterizedTest
+    @CsvSource({
+            "username1,pASSword123!@#",
+            "username2,qweaf!@#1r14Qqwe"
+    })
+    void registerShouldSendCorrectRequest(String username, String password) throws InterruptedException, JsonProcessingException {
+        String expectedResponseBody = "someNewToken";
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(HttpStatus.OK.value())
+                .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .setBody(objectMapper.writeValueAsString(ApiResponse.success(expectedResponseBody)))
+        );
+        String token = "token";
+        when(authLoginService.login()).thenReturn(token);
+
+        authService.register(username, password);
+
+        RecordedRequest request = mockWebServer.takeRequest();
+
+        String expectedBody = objectMapper.writeValueAsString(new AuthService.RegisterRequest(username, password));
+        assertAll(
+                () -> assertEquals("Bearer " + token, request.getHeader(HttpHeaders.AUTHORIZATION)),
+                () -> assertEquals(MediaType.APPLICATION_JSON_VALUE, request.getHeader(HttpHeaders.CONTENT_TYPE)),
+                () -> assertEquals(expectedBody, request.getBody().readUtf8()),
+                () -> assertEquals("POST", request.getMethod())
+        );
     }
 
     @ParameterizedTest
@@ -109,19 +202,71 @@ class AuthServiceTest {
             "ENTITY_NOT_FOUND,Error"
     })
     void registerShouldThrowAuthException(ApiResponse.Error.ErrorCode code, String message) throws JsonProcessingException {
-        when(authLoginService.login()).thenReturn("fake-token");
-        ClientResponse response = ClientResponse
-                .create(HttpStatus.OK)
-                .header("Content-Type", "application/json")
-                .body(objectMapper.writeValueAsString(
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(HttpStatus.OK.value())
+                .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .setBody(objectMapper.writeValueAsString(
                         ApiResponse.error(ApiResponse.Error.builder().code(code).message(message).build())
                 ))
-                .build();
-        when(exchangeFunction.exchange(any(ClientRequest.class)))
-                .thenReturn(Mono.just(response));
+        );
+        String token = "some-token";
+        when(authLoginService.login()).thenReturn(token);
+
         assertThrows(AuthException.class, () -> authService.register("username", "password"),
                 "Код ошибки: " + code + ". Сообщение: " + message);
     }
 
+    @Test
+    void registerShouldThrowNoResponseException() {
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(HttpStatus.OK.value())
+                .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+        );
+        assertThrows(NoResponseException.class, () -> authService.register("username", "password"));
+    }
 
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "username1", "qweaAS123"
+    })
+    void deleteShouldSendCorrectRequest(String username) throws InterruptedException {
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(HttpStatus.NO_CONTENT.value())
+        );
+        String token = "token";
+        when(authLoginService.login()).thenReturn(token);
+
+        authService.delete(username);
+
+        RecordedRequest request = mockWebServer.takeRequest();
+        assertTrue(Objects.nonNull(request.getRequestUrl()));
+        assertAll(
+                () -> assertTrue(request.getRequestUrl().toString().endsWith("/" + username)),
+                () -> assertEquals("Bearer " + token, request.getHeader(HttpHeaders.AUTHORIZATION)),
+                () -> assertEquals("DELETE", request.getMethod())
+        );
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "username1,aspdRW-_.~!()414",
+            "name,seqEQW142-_.~!()"
+    })
+    void patchShouldSendCorrectRequest(String username, String password) throws InterruptedException {
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(HttpStatus.NO_CONTENT.value())
+        );
+        String token = "token";
+        when(authLoginService.login()).thenReturn(token);
+
+        authService.patch(username, password);
+
+        RecordedRequest request = mockWebServer.takeRequest();
+        assertTrue(Objects.nonNull(request.getRequestUrl()));
+        assertAll(
+                () -> assertTrue(request.getRequestUrl().toString().endsWith("/" + username + "?password=" + password)),
+                () -> assertEquals("Bearer " + token, request.getHeader(HttpHeaders.AUTHORIZATION)),
+                () -> assertEquals("PATCH", request.getMethod())
+        );
+    }
 }

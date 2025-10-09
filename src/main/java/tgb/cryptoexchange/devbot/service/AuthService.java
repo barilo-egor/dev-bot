@@ -70,7 +70,7 @@ public class AuthService {
         }
     }
 
-    public record RegisterRequest(String username, String password) {
+    record RegisterRequest(String username, String password) {
     }
 
     public void delete(String username) {
